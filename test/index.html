@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>佐々木日記 | 佐々木動態観測事務所</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Yomogi&family=Zen+Kurenaido&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --c-bg: #fcf9f2;
+            --c-text: #4e3629;
+            --c-primary: #8d6e63;
+            --c-accent: #ffab91;
+            --c-danger: #e57373;
+            --c-info: #64b5f6;
+            --c-system: #90a4ae;
+            --c-liquid-light: #efebe9; 
+            --c-liquid-dark: #5d4037;
+            --c-white: #ffffff;
+            --c-shadow: rgba(78, 54, 41, 0.15);
+            --font-main: 'Zen Kurenaido', sans-serif;
+            --font-sub: 'Yomogi', cursive;
+            --z-overlay: 9999;
+            --z-drawer: 8000;
+            --z-search: 7000;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: var(--c-bg);
+            color: var(--c-text);
+            font-family: var(--font-main);
+            overflow-x: hidden;
+            line-height: 1.8;
+            -webkit-font-smoothing: antialiased;
+            transition: background 0.3s;
+        }
+
+        /* --- Liquid Transition Overlay --- */
+        #liquid-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: var(--z-overlay);
+            pointer-events: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .liquid-layer {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 0%;
+            transition: height 0.6s cubic-bezier(0.65, 0.05, 0.36, 1);
+        }
+        
+        .no-transition { transition: none !important; }
+
+        .layer-1 { background-color: var(--c-liquid-light); z-index: 1; }
+        .layer-2 { background-color: var(--c-liquid-dark); z-index: 2; transition-delay: 0.1s; }
+
+        .loader-text {
+            z-index: 3;
+            color: var(--c-white);
+            font-size: 2rem;
+            font-family: var(--font-sub);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+        }
+
+        /* --- Main App Layout --- */
+        #app {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            min-height: 100vh;
+            transition: filter 0.3s, opacity 0.3s;
+        }
+
+        body.is-blurred #app {
+            filter: blur(5px);
+            pointer-events: none;
+            user-select: none;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 40px 0;
+            margin-bottom: 20px;
+            transition: transform 0.3s, opacity 0.3s;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+        .brand:hover { transform: rotate(-2deg) scale(1.02); }
+
+        .sasaki-face {
+            width: 50px;
+            height: 50px;
+            background: #8d6e63;
+            border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
+            position: relative;
+            box-shadow: 2px 4px 0 var(--c-shadow);
+        }
+        .sasaki-face::after {
+            content: ''; position: absolute; top: 30%; left: 20%;
+            width: 60%; height: 40%; background: var(--c-bg);
+            border-radius: 50%;
+        }
+
+        h1 { font-size: 2.2rem; font-weight: normal; letter-spacing: 0.1em; }
+
+        /* --- News / Announcement Section --- */
+        .news-panel {
+            background: var(--c-white);
+            border: 1px solid var(--c-text);
+            border-left: 5px solid var(--c-text);
+            padding: 20px;
+            margin-bottom: 40px;
+            border-radius: 4px;
+            box-shadow: 4px 4px 0 var(--c-shadow);
+        }
+        .news-header {
+            font-family: var(--font-sub);
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            border-bottom: 1px dashed #ddd;
+            padding-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .news-header::before {
+            content: '●'; color: #ff5252; animation: blink 2s infinite;
+        }
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+
+        .news-list { list-style: none; }
+        .news-item {
+            display: flex;
+            align-items: baseline;
+            gap: 10px;
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 0.95rem;
+        }
+        .news-item:last-child { border-bottom: none; }
+        .news-date { font-family: monospace; color: #888; font-size: 0.85rem; min-width: 85px; }
+        .news-badge {
+            font-size: 0.7rem; padding: 2px 6px; border-radius: 3px; color: white; white-space: nowrap;
+        }
+        .badge-alert { background: var(--c-danger); }
+        .badge-info { background: var(--c-info); }
+        .badge-system { background: var(--c-system); }
+        
+        .news-content { line-height: 1.4; }
+
+        /* --- Search Area --- */
+        .search-container {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto 60px;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 10;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 15px 25px;
+            border: 2px solid var(--c-text);
+            border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+            font-family: var(--font-main);
+            font-size: 1.1rem;
+            background: transparent;
+            outline: none;
+            transition: all 0.3s;
+        }
+        .search-input:focus {
+            background: var(--c-white);
+            box-shadow: 4px 4px 0 var(--c-shadow);
+        }
+
+        body.is-searching header {
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(-20px);
+        }
+
+        body.is-searching .search-container {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 600px;
+            z-index: var(--z-search);
+        }
+        
+        body.is-searching .search-input {
+            background: var(--c-white);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            border-color: var(--c-primary);
+        }
+
+        body.is-searching::after {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(252, 249, 242, 0.9);
+            z-index: calc(var(--z-search) - 1);
+            backdrop-filter: blur(2px);
+        }
+
+        /* --- Content Grid --- */
+        .digest-section { margin-bottom: 80px; }
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        .section-title {
+            font-size: 1.8rem;
+            background: linear-gradient(120deg, transparent 60%, var(--c-accent) 60%);
+            padding: 0 10px;
+            transform: rotate(-1deg);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 30px;
+        }
+
+        /* --- Responsive 2-Column Force for Mobile --- */
+        @media (max-width: 600px) {
+            .grid {
+                /* 強制的に2列にする設定 */
+                grid-template-columns: 1fr 1fr;
+                gap: 10px;
+            }
+            
+            /* スマホ時のカードの微調整 */
+            .card {
+                padding: 15px; /* 余白を狭く */
+                border-radius: 5px 15px 5px 15px;
+            }
+            .card h3 {
+                font-size: 1.1rem; /* タイトルを少し小さく */
+                margin-bottom: 10px;
+            }
+            .card-preview {
+                font-size: 0.8rem;
+                -webkit-line-clamp: 4; /* 行数を制限 */
+            }
+            .tags .tag {
+                font-size: 0.7rem;
+                padding: 1px 5px;
+            }
+            .mood-tracker {
+                width: 24px; height: 24px; font-size: 0.8rem;
+                top: -8px; right: -8px;
+            }
+
+            /* ニュースパネルの調整 */
+            .news-item { flex-direction: column; gap: 2px; }
+            .news-date { font-size: 0.8rem; }
+        }
+
+        .card {
+            background: var(--c-white);
+            border: 2px solid var(--c-text);
+            border-radius: 5px 20px 5px 20px;
+            padding: 25px;
+            position: relative;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            cursor: pointer;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        .card:hover {
+            transform: translateY(-5px) rotate(1deg);
+            box-shadow: 8px 8px 0 var(--c-shadow);
+        }
+        
+        .card-meta {
+            font-size: 0.9rem;
+            color: #888;
+            margin-bottom: 10px;
+        }
+        .card h3 {
+            font-size: 1.4rem;
+            margin-bottom: 15px;
+            line-height: 1.4;
+        }
+        .card-preview {
+            font-size: 0.95rem;
+            margin-bottom: 20px;
+            flex-grow: 1;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            opacity: 0.8;
+        }
+        .tags { display: flex; flex-wrap: wrap; gap: 8px; }
+        .tag {
+            font-size: 0.8rem;
+            color: var(--c-primary);
+            background: #efebe9;
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+
+        .mood-tracker {
+            position: absolute;
+            top: -10px; right: -10px;
+            width: 30px; height: 30px;
+            background: var(--c-accent);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            border: 2px solid var(--c-text);
+        }
+
+        /* --- Article View --- */
+        .article-container {
+            background: var(--c-white);
+            padding: 60px;
+            border-radius: 20px 5px 20px 5px;
+            border: 2px solid var(--c-text);
+            box-shadow: 10px 10px 0 var(--c-shadow);
+            position: relative;
+        }
+        @media (max-width: 600px) {
+            .article-container { padding: 30px 20px; }
+            .article-title { font-size: 1.8rem; }
+        }
+
+        .article-header { margin-bottom: 40px; border-bottom: 2px dashed var(--c-text); padding-bottom: 20px; }
+        .article-date { font-family: var(--font-sub); font-size: 1.2rem; color: #888; }
+        .article-title { font-size: 2.5rem; margin: 10px 0; }
+        
+        .md-content p { margin-bottom: 1.5em; text-align: justify; }
+        .md-content img {
+            max-width: 100%;
+            border: 8px solid white;
+            box-shadow: 5px 5px 15px rgba(0,0,0,0.1);
+            transform: rotate(-1deg);
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .md-content b { background: linear-gradient(transparent 70%, var(--c-accent) 70%); }
+        .md-content blockquote {
+            border-left: 4px solid var(--c-primary);
+            padding-left: 20px;
+            font-style: italic;
+            color: #6d4c41;
+            margin: 20px 0;
+        }
+
+        /* --- Drawer Menu --- */
+        #drawer-menu {
+            position: fixed;
+            top: 0; left: 0;
+            width: 320px;
+            height: 100vh;
+            background: #fffbf0;
+            z-index: var(--z-drawer);
+            transform: translateX(-100%);
+            transition: transform 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+            box-shadow: 5px 0 30px rgba(0,0,0,0.1);
+            border-right: 4px solid var(--c-primary);
+            display: flex;
+            flex-direction: column;
+            padding: 40px 25px;
+        }
+        #drawer-menu.open { transform: translateX(0); }
+        
+        .drawer-content-scroll {
+            flex-grow: 1;
+            overflow-y: auto;
+            margin-bottom: 20px;
+        }
+
+        .drawer-title {
+            font-size: 1.8rem;
+            font-family: var(--font-sub);
+            margin-bottom: 30px;
+            padding-bottom: 10px;
+            border-bottom: 2px dashed var(--c-primary);
+            flex-shrink: 0;
+        }
+        
+        .drawer-section { margin-bottom: 40px; }
+        .drawer-section h3 { margin-bottom: 15px; color: var(--c-primary); }
+        
+        .person-card {
+            background: var(--c-white);
+            border: 1px solid var(--c-primary);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        .person-name { font-weight: bold; font-size: 1.1rem; margin-bottom: 5px; display:block; }
+        .person-desc { font-size: 0.9rem; color: #555; line-height: 1.5; }
+
+        .drawer-link {
+            display: block;
+            padding: 10px;
+            text-decoration: none;
+            color: var(--c-text);
+            border-bottom: 1px solid #ddd;
+            transition: 0.2s;
+        }
+        .drawer-link:hover { background: var(--c-liquid-light); padding-left: 15px; }
+
+        .key-hint {
+            flex-shrink: 0;
+            text-align: center;
+            font-size: 0.8rem;
+            color: #888;
+            margin-top: auto;
+            width: 100%;
+        }
+
+        /* --- Buttons --- */
+        .btn {
+            background: var(--c-text); color: var(--c-white);
+            border: none; padding: 10px 25px; font-family: var(--font-main);
+            border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+            cursor: pointer; transition: 0.2s; font-size: 1rem;
+        }
+        .btn:hover { transform: scale(1.05); background: var(--c-primary); color: var(--c-white);}
+        .btn-outline { background: transparent; color: var(--c-text); border: 2px solid var(--c-text); }
+
+        .hidden { display: none !important; }
+
+        .admin-dashboard { display: grid; grid-template-columns: 200px 1fr; gap: 30px; }
+        @media (max-width: 768px) {
+            .admin-dashboard { grid-template-columns: 1fr; }
+            .sidebar { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="liquid-overlay">
+    <div class="liquid-layer layer-1"></div>
+    <div class="liquid-layer layer-2"></div>
+    <div class="loader-text">Loading...</div>
+</div>
+
+<div id="drawer-menu">
+    <div class="drawer-title">観測手帳</div>
+    
+    <div class="drawer-content-scroll">
+        <div class="drawer-section">
+            <h3>主要人物</h3>
+            <div class="person-card">
+                <span class="person-name">佐々木 (Sasaki)</span>
+                <div class="person-desc">
+                    本観測の対象人物。<br>
+                    文房具への執着が強い。<br>
+                    よく強がり、よく盗まれ、<br>
+                    よくイキる。
+                </div>
+            </div>
+            <div class="person-card">
+                <span class="person-name">大竹 (Otake)</span>
+                <div class="person-desc">
+                    佐々木の天敵。<br>
+                    文房具奪取のプロフェッショナル。<br>
+                    因果応報の執行者。<br>
+                    但し普通に危険。
+                </div>
+            </div>
+            <div class="person-card">
+                <span class="person-name">観測者 (Observer)</span>
+                <div class="person-desc">
+                    この日記の執筆者。<br>
+                    中立を保ちつつ、<br>
+                    心の中でツッコミを入れている。<br>
+                    もちろん平和主義者。
+                </div>
+            </div>
+        </div>
+
+        <div class="drawer-section">
+            <h3>おすすめ観測記録</h3>
+            <a href="javascript:void(0)" onclick="router.navigate('/article/3')" class="drawer-link">新しい文房具</a>
+            <a href="javascript:void(0)" onclick="router.navigate('/article/5')" class="drawer-link">安奪高守 大作戦</a>
+            <a href="javascript:void(0)" onclick="router.navigate('/article/6')" class="drawer-link">佐々木の強がり方</a>
+        </div>
+    </div>
+    
+    <div class="key-hint">ESCキーで閉じる</div>
+</div>
+
+<div id="app">
+    <header>
+        <div class="brand" onclick="router.navigate('/')">
+            <div class="sasaki-face"></div>
+            <h1>佐々木日記</h1>
+        </div>
+        <nav id="nav-public">
+            <button class="btn btn-outline" onclick="router.navigate('/about')">佐々木について</button>
+        </nav>
+        <nav id="nav-admin" class="hidden">
+            <span style="margin-right:15px; font-weight:bold;">Admin Mode</span>
+            <button class="btn" onclick="app.logout()">Exit</button>
+        </nav>
+    </header>
+
+    <div id="view-home" class="view-section">
+        <div id="news-container"></div>
+
+        <div class="search-container">
+            <input type="text" class="search-input" placeholder="キーワードや #タグ で検索..." 
+                onfocus="app.setSearchMode(true)" 
+                oninput="app.search(this.value)">
+        </div>
+
+        <div id="digest-container"></div>
+        
+        <div style="text-align:center; margin-top:100px; padding-bottom:50px; opacity:0.6; font-size:0.9rem;">
+            <div style="margin-bottom:10px;">&copy; 2026 佐々木動態観測事務所</div>
+            <a href="javascript:void(0)" onclick="app.tryAdmin()" style="color:inherit; text-decoration:none; opacity:0.5;">System v2.8.2</a>
+        </div>
+    </div>
+
+    <div id="view-article" class="view-section hidden">
+        <div style="display:flex; justify-content:space-between; margin-bottom:20px;">
+            <button class="btn btn-outline" onclick="router.back()">← 戻る</button>
+            <span style="font-size:0.8rem; color:#888; padding-top:10px;">ESCキーで戻る</span>
+        </div>
+        <div class="article-container">
+            <div id="article-render-target"></div>
+        </div>
+    </div>
+
+    <div id="view-about" class="view-section hidden">
+        <button class="btn btn-outline" onclick="router.back()" style="margin-bottom:20px;">← 戻る</button>
+        <div class="article-container">
+            <div class="article-header">
+                <h1 class="article-title" style="font-size:2rem;">佐々木動態観測事務所について</h1>
+            </div>
+            <div class="md-content">
+                <p><b>■ 当観測所の設立趣旨および存在意義</b><br>
+                本機構（以下「当事務所」）は、指定被験体「佐々木（仮称：Ks-0.GuaKi）」の生物学的、社会学的、および物理的な挙動、ならびに当該被験体が所有・占有する文房具類の流動的遷移（消失、破損、横領等を含む）を24時間体制で永続的に観測・記録・保存することを唯一の至上命題とする非営利・非公開の研究機関です。
+
+                当事務所の目的は、佐々木という一個体の生滅に何らかの意味を見出すことではありません。むしろ、極めて凡庸かつ無価値な存在が、無慈悲な外的環境に曝露された際に示す「無意味な抵抗」および「不可避な劣化」のプロセスを、純粋な統計学的数値へと変換することにあります。</p>
+
+                <p><b>■ 厳格なる観測指針（絶対的不干渉原則）</b><br>
+                我々観測員は、佐々木に対して一切の直接的・間接的干渉を禁じられています。この原則は、被験体の生命維持が危ぶまれる事態においても、厳格に適用されます。
+
+                物理的毀損の放置: 被験体が所有する希少文具「クルトガダイブ」が、悪意ある第三者によって略奪、または不当な手段で接収されたとしても、我々は記録機器のシャッター速度を調整するのみです。その際、被験体が示す落胆の表情は、単なる「顔面筋の不随意運動」として処理されます。
+                精神的蹂躙の受容: 被験体が社会集団において不条理、かつ尊厳を著しく欠いた呼称（アダ名）を付与され、精神的な摩耗を呈した場合においても、我々は静かにその音圧を測定し、インクの消費量を記録するのみです。
+                救済の拒絶: 佐々木が助けを求めて視線を彷徨わせたとしても、我々の視線と交わることはありません。観測者は透明な壁の向こう側に位置する特権的な「無」であり、佐々木の苦悩は、真空を伝わらない振動と同義です。</p>
+
+                <p><b>■ 文房具流動性の観測に関する補足</b><br>
+                当事務所が特注する高精度センサー（仮称：Taka-NuaShi）は、佐々木が所有するシャープペンシルの芯1本の摩耗から、消しゴムのカスに至るまで、そのすべてをエントロピーの増大として追跡します。特に、高額文房具が彼の指先から離れ、二度と戻らない「不可逆的な喪失」が発生する瞬間は、本研究における最も価値のあるデータポイントの一つとして重層的に記録されます。</p>
+
+                <p><b>■ 検体「佐々木」に関する定義</b><br>
+                佐々木という存在は、当事務所にとって「名前を持つ人間」ではありません。彼は、特定の座標を不規則に移動し、炭素を排出し、時折「後悔」に似た低周波を発生させる「観測用オブジェクト」に過ぎません。彼の喜び、悲しみ、怒りはすべて、回路図上のノイズとしてフィルタリングされ、純粋な挙動ログへと変換されます。</p>
+                
+                <div style="text-align:center; margin-top:40px;">
+                    <img src="https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=600&q=80" alt="Office">
+                    <p style="font-size:0.8rem; color:#888;">2026 - 佐々木動態観測事務所</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="view-admin" class="view-section hidden">
+        <h2>管理者モード</h2>
+        <div class="admin-dashboard" style="margin-top:20px;">
+            <textarea id="editor-raw" style="width:100%; height:300px; padding:10px; border:2px solid #ddd;" placeholder="Markdown..."></textarea>
+            <button class="btn" onclick="app.saveArticle()" style="margin-top:10px;">保存</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- MOCK DATA ---
+    const MOCK_DB = [
+        { id: 1, title: "佐々木日記の運営開始", date: "2026-02-12", mood: "☕", tags: ["佐々木", "研究", "運営"], digest: "佐々木日記", content: "佐々木の行動について研究し、その結果をまとめるためのサイトを作成した。\n\n果たして特記すべき成果が得られるのだろうか。\n...いや、まずは定期考査の準備か。\n![Coffee](https://images.unsplash.com/photo-1497935586351-b67a49e012bf?auto=format&fit=crop&w=600&q=80)" },
+        { id: 2, title: "自業自得の佐々木", date: "日時不明", mood: "🤔", tags: ["自業自得", "因果応報", "大きい竹"], digest: "運営開始前の出来事", content: "いままで人に暴力を振るっていたせいか、言葉で仕返しされてしまったようだ。手を大きく振り、大股で歩いていた。可哀想だとは思うが、擁護はできない。\n\n心配の声をかけただけで体を蹴ってくる人を擁護はできない。\n一学期のままでいたら、どれだけクラスが平和であっただろうか。" },
+        { id: 3, title: "新しい文房具", date: "日時不明", mood: "😊", tags: ["佐々木","文房具", "買い物"], digest: "運営開始前の出来事", content: "新しいシャーペンの**クルトガダイブ**を購入したようだ。\n大竹にぬすまれる雰囲気がただよいつつも、実用性があるようだ。\n\n公式サイトによると、常に心がとがり続ける**クルトガエンジン**を内蔵し、**自動芯出し機構**もあるそう。\n\n確かに、これだけの性能があるから転売が多いわけだ。\n\n(定価は**5500円**で、平均転売価格は**約10500円**だそうだ。狂っているな。\n\n" },
+        { id: 4, title: "佐々木のスマホ", date: "2026-02-02", mood: "☕", tags: ["佐々木", "スマホ","池上"], digest: "佐々木がいじる", content: "つい先日、佐々木本人と会ってきた。\nその時、佐々木はどこかのたいきと電話をしていた。ふと何を話しているのか気になって佐々木のスマホの画面を見てみた。\n\n...そこに書いてあったのは\n**マウンテンゴリラ**\nである。\n\nぜひ本人に読んでもらいたいところだ。" },
+        { id: 5, title: "佐々木が大竹から逃れる", date: "2026-02-02", mood: "🏃", tags: ["佐々木", "逃げる","大竹"], digest: "佐々木情報", content:"佐々木、あまりに大竹から文房具を盗まれすぎたようだ。\nそこで、佐々木はとある対策を仕掛けたようだ。\n\nその名も**安奪高守 大作戦**である。\nまぁただ単に文の一部を取っただけの名前だ。\n\nまず、400円程のミニマルシャーペンを購入する。それを筆箱に入れておく。\nそして、本命のクルトガダイブ等のお高いシャーペン(学校は高価な筆記具禁止だが)を、多摩センターの丸善で買った、**1本だけ入る皮の筆箱**を、流石にボッタクリ金額の**3300円**で購入した。\nそんなものを買うから、お財布がかつかつなるねん！\n\n彼の財布には2500円ほどしか残っていなかった。\nｻﾞﾏﾐﾛｫ!"},
+        { id: 6, title: "佐々木の強がり方", date: "2026-01-XX", mood: "😎", tags:["佐々木","強がる","すごい"], digest: "佐々木情報", content: "僕はあることに気づいてしまった。それは...\n\n**佐々木はイキっている！！**\n\n思えば至極当然のことであるが、最近の出来事を見直してみて欲しい。\n\n誰かに怒られたあと、佐々木はどうしていた..?\n\nそう、**みんなの方を見てニヤついた。**\nこれ、どっからどうみても強がっているのではないか。\n\nまぁ、生きがいや辛さを乗り越える方法は人それぞれだ。\nここは、尊重するのが重要かもしれない。"},
+        { id: 7, title: "運営の悩み", date: "2026-02-12", mood: "🤔", tags:["佐々木","日記","運営","悩み","Database","Cloud","github"], digest: "佐々木日記運営", content: "この佐々木日記を運営するに当たって、データ管理上の悩みがいくつかある。\n\n今みなさんが見ているこの文章は、サイトを表示する**HTMLというファイル**に**直接記述している。**\nただし、記事の管理がものすごく大変である。まぁでもゆうてだが。\nこのゲキムズ状態を回避する方法は一つあり、**CloudFlare**という、フロントエンドとバックエンドを同時公開できるサービスである。\nよく、オレンジ色の雲と一緒に「あなたはBOTですか？」的なやつがその代表だ。青色のやつはGoogleのreCHAPCHAなので勘違いしないように。\n話を戻しまして、そのCloudFlareのKVというデータを保管する場所にデータを保存したら簡単になる。しかしぃ！！！なんともセットアップが難しいのだ...\nこれが運営の最大の悩みである。phpにしたらどれだけ楽なことか...\n\nまぁ、今後は記事をハードコーディングしてGithub Pagesで公開しようと思う。"},
+        { id: 8, title: "佐々木「いやぁ〜だ」", date: "2026-02-13", mood: "🟤", tags:["佐々木","PvP","いやだ"], digest: "佐々木日記",content: "佐々木の本日の動態\n・キモい声で**「いやぁ〜ん」**といった\n・PvPをする約束をした\n\nそして、帰宅。佐々木から連絡がこない。\n...あいつ逃げたぞ！\n\n**みなさんで嘲笑しましょう(任意です)**"},
+    ];
+
+    // --- NEWS DATA (ADMIN NOTICES) ---
+    const NEWS_DB = [
+        { id: 101, date: "2026.02.14", type: "system", content: "観測システム v2.8.2 にアップデートしました。スマホ端末におけるグリッド表示の不具合（無限スクロール事案）を修正。" },
+        { id: 102, date: "2026.02.13", type: "alert", content: "【注意】被験体佐々木が「PvP」なる単語を使用していますが、実際には逃走する可能性が高いです。" },
+        { id: 103, date: "2026.02.10", type: "info", content: "新規観測員（インターン）の募集を一時停止します。現在、大竹氏の動向監視にリソースを集中しています。" }
+    ];
+
+    class App {
+        constructor() {
+            this.state = {
+                articles: MOCK_DB,
+                news: NEWS_DB,
+                isAdmin: false,
+                isSearching: false,
+                isDrawerOpen: false,
+                currentView: 'home',
+                searchJustOpened: false 
+            };
+            this.init();
+        }
+
+        async init() {
+            this.renderHome();
+            this.setupListeners();
+        }
+
+        setupListeners() {
+            // Global Keydown (ESC)
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    this.handleEsc();
+                }
+            });
+
+            // Click outside to close search or drawer
+            document.addEventListener('click', (e) => {
+                // 検索モードの判定
+                if (this.state.isSearching) {
+                    if (this.state.searchJustOpened) {
+                        this.state.searchJustOpened = false;
+                        return;
+                    }
+                    const searchContainer = document.querySelector('.search-container');
+                    if (searchContainer && !searchContainer.contains(e.target)) {
+                        this.setSearchMode(false);
+                    }
+                }
+                
+                // ドロワーの判定
+                if (this.state.isDrawerOpen) {
+                    const drawer = document.getElementById('drawer-menu');
+                    if (!drawer.contains(e.target) && e.target.id !== 'drawer-menu') {
+                         this.toggleDrawer(false);
+                    }
+                }
+            });
+        }
+
+        handleEsc() {
+            if (this.state.isSearching) {
+                this.setSearchMode(false);
+                return;
+            }
+            
+            if (this.state.isDrawerOpen) {
+                this.toggleDrawer(false);
+                return;
+            }
+
+            if (this.state.currentView === 'view-article' || this.state.currentView === 'view-about') {
+                router.back();
+            } else if (this.state.currentView === 'view-home') {
+                this.toggleDrawer(true);
+            }
+        }
+
+        setSearchMode(active) {
+            this.state.isSearching = active;
+            if (active) {
+                this.state.searchJustOpened = true; 
+                document.body.classList.add('is-searching');
+                this.toggleDrawer(false);
+            } else {
+                this.state.searchJustOpened = false;
+                document.body.classList.remove('is-searching');
+                document.querySelector('.search-input').blur();
+            }
+        }
+
+        toggleDrawer(open) {
+            const drawer = document.getElementById('drawer-menu');
+            this.state.isDrawerOpen = open;
+            if (open) {
+                drawer.classList.add('open');
+                document.body.classList.add('is-blurred');
+            } else {
+                drawer.classList.remove('open');
+                document.body.classList.remove('is-blurred');
+            }
+        }
+
+        // --- RENDERERS ---
+        renderHome() {
+            this.renderNews();
+            const container = document.getElementById('digest-container');
+            container.innerHTML = '';
+            const digests = {};
+            
+            this.state.articles.forEach(art => {
+                const key = art.digest || "その他";
+                if (!digests[key]) digests[key] = [];
+                digests[key].push(art);
+            });
+
+            Object.keys(digests).forEach(key => {
+                const section = document.createElement('div');
+                section.className = 'digest-section';
+                let cardsHTML = digests[key].map(art => `
+                    <div class="card" onclick="router.navigate('/article/${art.id}')">
+                        <div class="mood-tracker">${art.mood}</div>
+                        <div class="card-meta"><span>${art.date}</span></div>
+                        <h3>${art.title}</h3>
+                        <div class="card-preview">${this.stripMD(art.content)}</div>
+                        <div class="tags">${art.tags.map(t => `<span class="tag">#${t}</span>`).join('')}</div>
+                    </div>
+                `).join('');
+
+                section.innerHTML = `
+                    <div class="section-header">
+                        <span class="section-title">${key}</span>
+                        <div style="flex-grow:1; height:2px; background: repeating-linear-gradient(90deg, var(--c-text) 0, var(--c-text) 5px, transparent 5px, transparent 10px);"></div>
+                    </div>
+                    <div class="grid">${cardsHTML}</div>
+                `;
+                container.appendChild(section);
+            });
+        }
+
+        renderNews() {
+            const container = document.getElementById('news-container');
+            if (!container) return;
+            
+            if (this.state.news.length === 0) {
+                container.innerHTML = '';
+                return;
+            }
+
+            const newsItems = this.state.news.map(n => {
+                let badgeClass = 'badge-system';
+                let badgeText = 'SYSTEM';
+                if (n.type === 'alert') { badgeClass = 'badge-alert'; badgeText = 'ALERT'; }
+                if (n.type === 'info') { badgeClass = 'badge-info'; badgeText = 'INFO'; }
+                
+                return `
+                <li class="news-item">
+                    <span class="news-date">${n.date}</span>
+                    <span class="news-badge ${badgeClass}">${badgeText}</span>
+                    <span class="news-content">${n.content}</span>
+                </li>`;
+            }).join('');
+
+            container.innerHTML = `
+                <div class="news-panel">
+                    <div class="news-header">運営からの通達</div>
+                    <ul class="news-list">${newsItems}</ul>
+                </div>
+            `;
+        }
+
+        renderArticle(id) {
+            const article = this.state.articles.find(a => a.id == id);
+            if (!article) return;
+            const html = `
+                <div class="article-header">
+                    <div class="article-date">${article.date} | ${article.mood}</div>
+                    <h1 class="article-title">${article.title}</h1>
+                    <div class="tags">${article.tags.map(t => `<span class="tag">#${t}</span>`).join('')}</div>
+                </div>
+                <div class="md-content">${this.parseMD(article.content)}</div>
+            `;
+            document.getElementById('article-render-target').innerHTML = html;
+        }
+
+        // --- UTILS ---
+        parseMD(text) {
+            let processed = text
+                .replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/\n/g, '<br>')
+                .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
+                .replace(/!\[(.*?)\]\((.*?)\)/g, '<img src="$2" alt="$1">')
+                .replace(/> (.*)/g, '<blockquote>$1</blockquote>');
+
+            processed = processed.replace(
+                /(^|<br>)(https?:\/\/\S+\.(?:jpg|jpeg|gif|png|webp))(?=<br>|$)/gim, 
+                '$1<img src="$2" alt="Embedded Image">'
+            );
+
+            return processed;
+        }
+
+        stripMD(text) {
+            return text.replace(/[*#>!\[\]\(\)]/g, '');
+        }
+
+        search(query) {
+            const q = query.toLowerCase();
+            const cards = document.querySelectorAll('.card');
+            cards.forEach(card => {
+                const content = card.innerText.toLowerCase();
+                card.style.display = content.includes(q) ? 'flex' : 'none';
+            });
+        }
+
+        // --- TRANSITION EFFECT ---
+        transition(callback) {
+            const overlay = document.getElementById('liquid-overlay');
+            const l1 = overlay.querySelector('.layer-1');
+            const l2 = overlay.querySelector('.layer-2');
+            const text = overlay.querySelector('.loader-text');
+
+            l1.classList.remove('no-transition');
+            l2.classList.remove('no-transition');
+            
+            l1.style.top = "0"; l1.style.bottom = "auto"; l1.style.height = "100%";
+            l2.style.top = "0"; l2.style.bottom = "auto"; l2.style.height = "100%";
+            
+            setTimeout(() => { text.style.opacity = 1; text.style.transform = "translateY(0)"; }, 400);
+
+            setTimeout(() => {
+                callback();
+                
+                l1.classList.add('no-transition');
+                l2.classList.add('no-transition');
+                l1.style.top = "auto"; l1.style.bottom = "0";
+                l2.style.top = "auto"; l2.style.bottom = "0";
+
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        l1.classList.remove('no-transition');
+                        l2.classList.remove('no-transition');
+                        l1.style.height = "0%";
+                        l2.style.height = "0%";
+                        text.style.opacity = 0;
+                    });
+                });
+
+            }, 1200); 
+        }
+
+        tryAdmin() { this.transition(() => { router.show('view-admin'); }); }
+        logout() { this.transition(() => { router.navigate('/'); }); }
+        saveArticle() { alert("保存機能はデモ版のため無効です"); }
+    }
+
+    // --- ROUTER ---
+    const router = {
+        navigate: (path) => {
+            app.transition(() => {
+                app.setSearchMode(false);
+                app.toggleDrawer(false);
+
+                if (path === '/') {
+                    router.show('view-home');
+                } else if (path === '/about') {
+                    router.show('view-about');
+                } else if (path.startsWith('/article/')) {
+                    const id = path.split('/')[2];
+                    app.renderArticle(id);
+                    router.show('view-article');
+                }
+            });
+        },
+        back: () => router.navigate('/'),
+        show: (id) => {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+            document.getElementById(id).classList.remove('hidden');
+            app.state.currentView = id;
+            window.scrollTo(0, 0);
+        }
+    };
+
+    const app = new App();
+</script>
+
+</body>
+</html>
