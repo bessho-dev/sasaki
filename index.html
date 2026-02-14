@@ -39,7 +39,7 @@
             transition: background 0.3s;
         }
 
-        /* --- Liquid Transition Overlay --- */
+        /* --- 佐々木式ページ切り替え --- */
         #liquid-overlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -72,7 +72,7 @@
             transition: all 0.3s ease;
         }
 
-        /* --- Main App Layout --- */
+        /* --- 大まかなレイアウト --- */
         #app {
             max-width: 900px;
             margin: 0 auto;
@@ -121,7 +121,7 @@
 
         h1 { font-size: 2.2rem; font-weight: normal; letter-spacing: 0.1em; }
 
-        /* --- News / Announcement Section --- */
+        /* --- 通達パネル --- */
         .news-panel {
             background: var(--c-white);
             border: 1px solid var(--c-text);
@@ -226,7 +226,7 @@
             backdrop-filter: blur(2px);
         }
 
-        /* --- Content Grid --- */
+        /* --- 記事の均等配置他 --- */
         .digest-section { margin-bottom: 80px; }
         .section-header {
             display: flex;
@@ -247,26 +247,24 @@
             gap: 30px;
         }
 
-        /* --- Responsive 2-Column Force for Mobile --- */
+        /* --- スマホ対応にしてみた --- */
         @media (max-width: 600px) {
             .grid {
-                /* 強制的に2列にする設定 */
                 grid-template-columns: 1fr 1fr;
                 gap: 10px;
             }
             
-            /* スマホ時のカードの微調整 */
             .card {
-                padding: 15px; /* 余白を狭く */
+                padding: 15px;
                 border-radius: 5px 15px 5px 15px;
             }
             .card h3 {
-                font-size: 1.1rem; /* タイトルを少し小さく */
+                font-size: 1.1rem;
                 margin-bottom: 10px;
             }
             .card-preview {
                 font-size: 0.8rem;
-                -webkit-line-clamp: 4; /* 行数を制限 */
+                -webkit-line-clamp: 4;
             }
             .tags .tag {
                 font-size: 0.7rem;
@@ -341,7 +339,7 @@
             border: 2px solid var(--c-text);
         }
 
-        /* --- Article View --- */
+        /* 開くやつ */
         .article-container {
             background: var(--c-white);
             padding: 60px;
@@ -377,7 +375,7 @@
             margin: 20px 0;
         }
 
-        /* --- Drawer Menu --- */
+        /* 左から出てくるやつ(ドロワーメニュー) */
         #drawer-menu {
             position: fixed;
             top: 0; left: 0;
@@ -442,7 +440,7 @@
             width: 100%;
         }
 
-        /* --- Buttons --- */
+        /* 僕の使うボタン達 */
         .btn {
             background: var(--c-text); color: var(--c-white);
             border: none; padding: 10px 25px; font-family: var(--font-main);
@@ -543,7 +541,7 @@
         
         <div style="text-align:center; margin-top:100px; padding-bottom:50px; opacity:0.6; font-size:0.9rem;">
             <div style="margin-bottom:10px;">&copy; 2026 佐々木動態観測事務所</div>
-            <a href="javascript:void(0)" onclick="app.tryAdmin()" style="color:inherit; text-decoration:none; opacity:0.5;">System v2.8.2</a>
+            <a href="javascript:void(0)" onclick="app.tryAdmin()" style="color:inherit; text-decoration:none; opacity:0.5;">System v2.9.2</a>
         </div>
     </div>
 
@@ -602,7 +600,7 @@
 </div>
 
 <script>
-    // --- MOCK DATA ---
+    // 日記データの保管 (JSL)
     const MOCK_DB = [
         { id: 1, title: "佐々木日記の運営開始", date: "2026-02-12", mood: "☕", tags: ["佐々木", "研究", "運営"], digest: "佐々木日記", content: "佐々木の行動について研究し、その結果をまとめるためのサイトを作成した。\n\n果たして特記すべき成果が得られるのだろうか。\n...いや、まずは定期考査の準備か。\n![Coffee](https://images.unsplash.com/photo-1497935586351-b67a49e012bf?auto=format&fit=crop&w=600&q=80)" },
         { id: 2, title: "自業自得の佐々木", date: "日時不明", mood: "🤔", tags: ["自業自得", "因果応報", "大きい竹"], digest: "運営開始前の出来事", content: "いままで人に暴力を振るっていたせいか、言葉で仕返しされてしまったようだ。手を大きく振り、大股で歩いていた。可哀想だとは思うが、擁護はできない。\n\n心配の声をかけただけで体を蹴ってくる人を擁護はできない。\n一学期のままでいたら、どれだけクラスが平和であっただろうか。" },
@@ -615,7 +613,7 @@
         { id:9, title: "佐々木/明希 衝突事件", date: "三学期(日時不明)", mood: "😂", tags:["佐々木","明希","衝突","泣"], digest:"佐々木大惨事", content: "三学期も元気に動くイキリキッズ(イキることはいいことです)、佐々木。表情筋を鍛えているのか、笑顔だ。\n\n今日は今日で、他の人にいたずらしつつ、いつも通り生きている。人の物を盗んでは逃亡している。\nもちろん、多くの人は知っているだろう。そこで、前の扉で**明希と衝突した。**\nその後、検体佐々木は豆腐のように小さくなり、豆腐のようにメンタルが割れ、絶望した(理由は検体から直接聞いて下さい)。\n\n**宣伝欄**\n佐々木に関する情報を**常に募集**しています。\n2/16日ほどに記載する**Google formにてご応募**ください。"},
     ];
 
-    // --- NEWS DATA (ADMIN NOTICES) ---
+    // --- 運営からの通達のコード ---
     //typeは system alert info new powerがあります
     const NEWS_DB = [
         { id: 101, date: "2026.02.14", type: "system", content: "観測システム v2.9.2 にアップデートしました。スマホ端末におけるグリッド表示の不具合（無限スクロール事案）を修正。通達機能を実装。" },
@@ -643,14 +641,13 @@
         }
 
         setupListeners() {
-            // Global Keydown (ESC)
+            // GK使ってみる
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'Escape') {
                     this.handleEsc();
                 }
             });
 
-            // Click outside to close search or drawer
             document.addEventListener('click', (e) => {
                 // 検索モードの判定
                 if (this.state.isSearching) {
@@ -717,7 +714,7 @@
             }
         }
 
-        // --- RENDERERS ---
+        // --- レンダリングとかその他 ---
         renderHome() {
             this.renderNews();
             const container = document.getElementById('digest-container');
@@ -801,7 +798,6 @@
             document.getElementById('article-render-target').innerHTML = html;
         }
 
-        // --- UTILS ---
         parseMD(text) {
             let processed = text
                 .replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -872,7 +868,7 @@
         saveArticle() { alert("保存機能はデモ版のため無効です"); }
     }
 
-    // --- ROUTER ---
+    // るーたー
     const router = {
         navigate: (path) => {
             app.transition(() => {
