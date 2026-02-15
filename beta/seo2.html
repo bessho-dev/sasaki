@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- SEO対策: 基本メタタグ -->
+    <title>佐々木日記 | 佐々木動態観測事務所 公式アーカイブ</title>
+    <meta name="description" content="指定被験体「佐々木」の生態、文房具の流動的遷移、および日常の不条理を24時間体制で記録する、佐々木動態観測事務所の公式オンライン日記です。">
+    <meta name="keywords" content="佐々木, 佐々木日記, 観測事務所, 文房具, クルトガダイブ, 大竹">
+    <link rel="canonical" href="https://your-domain.com/">
+
+    <!-- SNS対策 (OGP) -->
+    <meta property="og:title" content="佐々木日記 | 佐々木動態観測事務所">
+    <meta property="og:description" content="被験体「佐々木」の無意味な抵抗と不可避な劣化のプロセスを記録。">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=600&q=80">
+
+    <!-- パフォーマンス対策: フォントのプリロード (WOFF2に変更) -->
+    <link rel="preload" href="https://bessho-dev.github.io/sasaki/font/ZenKurenaido-Regular.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="https://bessho-dev.github.io/sasaki/font/Yomogi-Regular.woff2" as="font" type="font/woff2" crossorigin>
+
+    <!-- Google Fonts (Fallback) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Yomogi&family=Zen+Kurenaido&display=swap" rel="stylesheet">
+
+    <style>
+        /* --- 変数定義 --- */
+        :root {
+            --c-bg: #fcf9f2;
+            --c-text: #4e3629;
+            --c-primary: #8d6e63;
+            --c-accent: #ffab91;
+            --c-danger: #e57373;
+            --c-info: #64b5f6;
+            --c-system: #90a4ae;
+            --c-liquid-light: #efebe9; 
+            --c-liquid-dark: #5d4037;
+            --c-white: #ffffff;
+            --c-shadow: rgba(78, 54, 41, 0.15);
+            --font-main: 'Zen Kurenaido', 'Zen Kurenaido Local', sans-serif;
+            --font-sub: 'Yomogi', 'Yomogi Local', cursive;
+            --z-overlay: 9999;
+            --z-drawer: 8000;
+            --z-search: 7000;
+        }
+
+        /* --- フォント設定 (WOFF2へ変更 & font-display: swap) --- */
+        @font-face {
+            font-family: 'Zen Kurenaido Local';
+            src: url('https://bessho-dev.github.io/sasaki/font/ZenKurenaido-Regular.woff2') format('woff2');
+            font-display: swap;
+            unicode-range: U+3000-30FF, U+4E00-9FAF, U+20-7E;
+        }
+        @font-face {
+            font-family: 'Yomogi Local';
+            src: url('https://bessho-dev.github.io/sasaki/font/Yomogi-Regular.woff2') format('woff2');
+            font-display: swap;
+            unicode-range: U+3000-30FF, U+4E00-9FAF, U+20-7E;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: var(--c-bg);
+            color: var(--c-text);
+            font-family: var(--font-main);
+            overflow-x: hidden;
+            line-height: 1.8;
+            -webkit-font-smoothing: antialiased;
+            transition: background 0.3s;
+        }
+
+        /* --- スケルトンローダー (CLS対策) --- */
+        .skeleton {
+            background: #eee;
+            background: linear-gradient(110deg, #ececec 8%, #f5f5f5 18%, #ececec 33%);
+            background-size: 200% 100%;
+            animation: 1.5s shine linear infinite;
+            border-radius: 4px;
+            color: transparent !important;
+        }
+        @keyframes shine { to { background-position-x: -200%; } }
+        .skeleton-text { height: 1em; margin-bottom: 10px; width: 100%; }
+        .skeleton-title { height: 2em; margin-bottom: 15px; width: 70%; }
+
+        /* --- 佐々木式ページ切り替え --- */
+        #liquid-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: var(--z-overlay);
+            pointer-events: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        .liquid-layer {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 0%;
+            transition: height 0.6s cubic-bezier(0.65, 0.05, 0.36, 1);
+        }
+        .no-transition { transition: none !important; }
+        .layer-1 { background-color: var(--c-liquid-light); z-index: 1; }
+        .layer-2 { background-color: var(--c-liquid-dark); z-index: 2; transition-delay: 0.1s; }
+        .loader-text {
+            z-index: 3; color: var(--c-white); font-size: 2rem;
+            font-family: var(--font-sub); opacity: 0; transform: translateY(20px);
+        }
+
+        /* --- レイアウト --- */
+        #app {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            min-height: 100vh;
+            contain: content; /* レンダリング最適化 */
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 40px 0;
+            margin-bottom: 20px;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+        .brand:hover { transform: rotate(-2deg) scale(1.02); }
+
+        .sasaki-face {
+            width: 50px; height: 50px;
+            background: #8d6e63;
+            border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
+            position: relative;
+            box-shadow: 2px 4px 0 var(--c-shadow);
+        }
+        .sasaki-face::after {
+            content: ''; position: absolute; top: 30%; left: 20%;
+            width: 60%; height: 40%; background: var(--c-bg);
+            border-radius: 50%;
+        }
+
+        h1 { font-size: 2.2rem; font-weight: normal; letter-spacing: 0.1em; }
+
+        /* --- 通達パネル --- */
+        .news-panel {
+            background: var(--c-white);
+            border: 1px solid var(--c-text);
+            border-left: 5px solid var(--c-text);
+            padding: 20px;
+            margin-bottom: 40px;
+            border-radius: 4px;
+            box-shadow: 4px 4px 0 var(--c-shadow);
+        }
+        .news-header {
+            font-family: var(--font-sub);
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            border-bottom: 1px dashed #ddd;
+            padding-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .news-header::before { content: '●'; color: #ff5252; animation: blink 2s infinite; }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+        .news-list { list-style: none; }
+        .news-item { display: flex; align-items: baseline; gap: 10px; padding: 8px 0; border-bottom: 1px solid #f0f0f0; font-size: 0.95rem; }
+        .news-item:last-child { border-bottom: none; }
+        .news-date { font-family: var(--font-main); color: #888; font-size: 0.85rem; min-width: 85px; }
+        .news-badge { font-size: 0.7rem; padding: 2px 6px; border-radius: 3px; color: white; white-space: nowrap; }
+        .badge-alert { background: var(--c-danger); }
+        .badge-info { background: var(--c-info); }
+        .badge-system { background: var(--c-system); }
+        .badge-new { background: #90de2a }
+        .badge-power { background: #e60716 }
+
+        /* --- 検索 --- */
+        .search-container {
+            position: relative; width: 100%; max-width: 400px;
+            margin: 0 auto 60px; z-index: 10;
+        }
+        .search-input {
+            width: 100%; padding: 15px 25px;
+            border: 2px solid var(--c-text);
+            border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+            font-family: var(--font-main);
+            font-size: 1.1rem; background: transparent; outline: none;
+        }
+
+        /* --- 記事カード --- */
+        .digest-section { margin-bottom: 80px; }
+        .section-header { display: flex; align-items: center; gap: 15px; margin-bottom: 30px; }
+        .section-title {
+            font-size: 1.8rem;
+            background: linear-gradient(120deg, transparent 60%, var(--c-accent) 60%);
+            padding: 0 10px; transform: rotate(-1deg);
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 30px;
+        }
+        .card {
+            background: var(--c-white);
+            border: 2px solid var(--c-text);
+            border-radius: 5px 20px 5px 20px;
+            padding: 25px; position: relative;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            cursor: pointer; height: 100%; display: flex; flex-direction: column;
+        }
+        .card:hover { transform: translateY(-5px) rotate(1deg); box-shadow: 8px 8px 0 var(--c-shadow); }
+        .card-meta { font-size: 0.9rem; color: #888; margin-bottom: 10px; }
+        .card h3 { font-size: 1.4rem; margin-bottom: 15px; }
+        .card-preview {
+            font-size: 0.95rem; margin-bottom: 20px; flex-grow: 1;
+            display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+            overflow: hidden; opacity: 0.8;
+        }
+        .tags { display: flex; flex-wrap: wrap; gap: 8px; }
+        .tag { font-size: 0.8rem; color: var(--c-primary); background: #efebe9; padding: 2px 8px; border-radius: 4px; }
+        .mood-tracker {
+            position: absolute; top: -10px; right: -10px;
+            width: 30px; height: 30px; background: var(--c-accent);
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            border: 2px solid var(--c-text);
+        }
+
+        /* --- ドロワー --- */
+        #drawer-menu {
+            position: fixed; top: 0; left: 0; width: 320px; height: 100vh;
+            background: #fffbf0; z-index: var(--z-drawer);
+            transform: translateX(-100%); transition: transform 0.4s;
+            box-shadow: 5px 0 30px rgba(0,0,0,0.1);
+            border-right: 4px solid var(--c-primary);
+            padding: 40px 25px; display: flex; flex-direction: column;
+        }
+        #drawer-menu.open { transform: translateX(0); }
+        .drawer-title { font-size: 1.8rem; font-family: var(--font-sub); margin-bottom: 30px; border-bottom: 2px dashed var(--c-primary); }
+
+        /* --- 記事詳細 --- */
+        .article-container {
+            background: var(--c-white); padding: 60px;
+            border-radius: 20px 5px 20px 5px; border: 2px solid var(--c-text);
+            box-shadow: 10px 10px 0 var(--c-shadow);
+        }
+        .md-content img { max-width: 100%; height: auto; border: 8px solid white; box-shadow: 5px 5px 15px rgba(0,0,0,0.1); margin: 20px 0; }
+
+        .btn {
+            background: var(--c-text); color: var(--c-white); border: none; padding: 10px 25px;
+            border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px; cursor: pointer;
+        }
+        .btn-outline { background: transparent; color: var(--c-text); border: 2px solid var(--c-text); }
+        .hidden { display: none !important; }
+
+        @media (max-width: 600px) {
+            .grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+            .article-container { padding: 30px 20px; }
+            .article-title { font-size: 1.8rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="liquid-overlay">
+    <div class="liquid-layer layer-1"></div>
+    <div class="liquid-layer layer-2"></div>
+    <div class="loader-text">Loading...</div>
+</div>
+
+<nav id="drawer-menu" aria-label="観測手帳メニュー">
+    <div class="drawer-title">観測手帳</div>
+    <div style="overflow-y:auto; flex-grow:1;">
+        <div class="drawer-section">
+            <h3 style="color:var(--c-primary); margin-bottom:10px;">主要人物</h3>
+            <div style="background:white; padding:15px; border-radius:8px; margin-bottom:15px; border:1px solid var(--c-primary);">
+                <strong>佐々木 (Sasaki)</strong><br>
+                <small>文房具への執着が強い観測対象。よくイキる。</small>
+            </div>
+            <!-- 他の人物カードも同様に配置可能 -->
+        </div>
+    </div>
+    <div style="font-size:0.8rem; color:#888; text-align:center;">ESCキーで閉じる</div>
+</nav>
+
+<div id="app">
+    <header>
+        <div class="brand" onclick="router.navigate('/')" role="button" aria-label="ホームへ戻る">
+            <div class="sasaki-face"></div>
+            <h1>佐々木日記</h1>
+        </div>
+        <nav id="nav-public">
+            <button class="btn btn-outline" onclick="router.navigate('/about')">事務所について</button>
+        </nav>
+    </header>
+
+    <main id="view-home" class="view-section">
+        <div id="news-container"></div>
+
+        <div class="search-container">
+            <input type="text" class="search-input" placeholder="キーワードや #タグ で検索..." 
+                onfocus="app.setSearchMode(true)" 
+                oninput="app.search(this.value)">
+        </div>
+
+        <!-- 初期状態はスケルトンを表示 (CLS対策) -->
+        <div id="digest-container">
+            <div class="digest-section">
+                <div class="section-header">
+                    <div class="skeleton skeleton-title" style="width:150px;"></div>
+                </div>
+                <div class="grid">
+                    <div class="card skeleton"></div>
+                    <div class="card skeleton"></div>
+                    <div class="card skeleton"></div>
+                </div>
+            </div>
+        </div>
+        
+        <footer style="text-align:center; margin-top:100px; padding-bottom:50px; opacity:0.6; font-size:0.9rem;">
+            &copy; 2026 佐々木動態観測事務所
+            <br><a href="javascript:void(0)" onclick="app.tryAdmin()" style="color:inherit; text-decoration:none;">System v3.0.0 (Optimized)</a>
+        </footer>
+    </main>
+
+    <section id="view-article" class="view-section hidden">
+        <button class="btn btn-outline" onclick="router.back()" style="margin-bottom:20px;">← 戻る</button>
+        <article class="article-container">
+            <div id="article-render-target"></div>
+        </article>
+    </section>
+
+    <section id="view-about" class="view-section hidden">
+        <button class="btn btn-outline" onclick="router.back()" style="margin-bottom:20px;">← 戻る</button>
+        <div class="article-container">
+            <h1 class="article-title">佐々木動態観測事務所について</h1>
+            <div class="md-content">
+                <p><b>■ 設立趣旨</b><br>
+                指定被験体「佐々木」の挙動を24時間体制で記録する非営利研究機関です。</p>
+                <p>我々は、彼の文房具が奪取される瞬間を、エントロピーの増大として科学的に記録します。物理的介入は一切行いません。</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="view-admin" class="view-section hidden">
+        <h2>管理者モード (閲覧のみ)</h2>
+        <textarea id="editor-raw" style="width:100%; height:200px; margin-top:20px;" placeholder="Markdown..."></textarea>
+        <button class="btn" style="margin-top:10px;" onclick="router.navigate('/')">戻る</button>
+    </section>
+</div>
+
+<script>
+    // --- 内部データベース (36,000文字規模を想定したデータ構造) ---
+    const MOCK_DB = [
+        { id: 1, title: "佐々木日記の運営開始", date: "2026-02-12", mood: "☕", tags: ["佐々木", "研究", "運営"], digest: "佐々木日記", content: "佐々木の行動について研究し、その結果をまとめるためのサイトを作成した。\n![Coffee](https://images.unsplash.com/photo-1497935586351-b67a49e012bf?auto=format&fit=crop&w=600&q=80)" },
+        { id: 2, title: "自業自得の佐々木", date: "日時不明", mood: "🤔", tags: ["自業自得", "因果応報", "大きい竹"], digest: "運営開始前の出来事", content: "いままで人に暴力を振るっていたせいか、言葉で仕返しされてしまったようだ。" },
+        { id: 3, title: "新しい文房具", date: "日時不明", mood: "😊", tags: ["佐々木","文房具", "買い物"], digest: "運営開始前の出来事", content: "新しいシャーペンの**クルトガダイブ**を購入したようだ。定価5500円。" },
+        { id: 4, title: "佐々木のスマホ", date: "2026-02-02", mood: "☕", tags: ["佐々木", "スマホ","池上"], digest: "佐々木情報", content: "画面に書いてあったのは**マウンテンゴリラ**である。" },
+        { id: 5, title: "佐々木が大竹から逃れる", date: "2026-02-02", mood: "🏃", tags: ["佐々木", "逃げる","大竹"], digest: "佐々木情報", content:"**安奪高守 大作戦**。3300円の筆箱を購入し、お財布がかつかつになった。" },
+        { id: 6, title: "佐々木の強がり方", date: "2026-01-XX", mood: "😎", tags:["佐々木","強がる"], digest: "佐々木情報", content: "怒られたあと、みんなの方を見てニヤついた。強がっている。" },
+        { id: 7, title: "運営の悩み", date: "2026-02-12", mood: "🤔", tags:["佐々木","日記","運営"], digest: "佐々木日記運営", content: "CloudFlare KVの導入を検討したが、現在はハードコーディングで対応中。" },
+        { id: 8, title: "佐々木「いやぁ〜だ」", date: "2026-02-13", mood: "🟤", tags:["佐々木","PvP"], digest: "佐々木日記", content: "PvPの約束をしたが逃亡した。" },
+        { id: 9, title: "佐々木/明希 衝突事件", date: "三学期", mood: "😂", tags:["佐々木","明希","泣"], digest:"佐々木大惨事", content: "扉で明希と衝突し、豆腐のようにメンタルが割れた。" }
+    ];
+
+    const NEWS_DB = [
+        { id: 101, date: "2026.02.15", type: "system", content: "観測システム v3.0.0 公開。SEO対策およびWOFF2フォントへの移行を完了。" },
+        { id: 102, date: "2026.02.14", type: "power", content: "有益な情報提供者には「佐々木情報操作権」を授与します。" }
+    ];
+
+    class App {
+        constructor() {
+            this.state = {
+                articles: MOCK_DB,
+                news: NEWS_DB,
+                isSearching: false,
+                isDrawerOpen: false,
+                currentView: 'home'
+            };
+            this.init();
+        }
+
+        init() {
+            // パフォーマンス対策: 描画を少し遅らせてメインスレッドを解放
+            window.addEventListener('load', () => {
+                setTimeout(() => {
+                    this.renderHome();
+                    this.setupListeners();
+                    this.hideOverlay();
+                }, 500);
+            });
+        }
+
+        setupListeners() {
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') this.handleEsc();
+            });
+        }
+
+        handleEsc() {
+            if (this.state.isSearching) return this.setSearchMode(false);
+            if (this.state.isDrawerOpen) return this.toggleDrawer(false);
+            if (this.state.currentView !== 'home') router.back();
+            else this.toggleDrawer(true);
+        }
+
+        setSearchMode(active) {
+            this.state.isSearching = active;
+            document.body.classList.toggle('is-searching', active);
+        }
+
+        toggleDrawer(open) {
+            this.state.isDrawerOpen = open;
+            document.getElementById('drawer-menu').classList.toggle('open', open);
+        }
+
+        renderHome() {
+            this.renderNews();
+            const container = document.getElementById('digest-container');
+            container.style.opacity = 0;
+            
+            const digests = {};
+            this.state.articles.forEach(art => {
+                const key = art.digest || "その他";
+                if (!digests[key]) digests[key] = [];
+                digests[key].push(art);
+            });
+
+            let html = '';
+            Object.keys(digests).forEach(key => {
+                html += `
+                    <section class="digest-section">
+                        <div class="section-header">
+                            <h2 class="section-title">${key}</h2>
+                            <div style="flex-grow:1; height:2px; background: repeating-linear-gradient(90deg, var(--c-text) 0, var(--c-text) 5px, transparent 5px, transparent 10px);"></div>
+                        </div>
+                        <div class="grid">${digests[key].map(art => this.createCard(art)).join('')}</div>
+                    </section>`;
+            });
+
+            container.innerHTML = html;
+            container.style.transition = 'opacity 0.5s';
+            container.style.opacity = 1;
+        }
+
+        createCard(art) {
+            return `
+                <div class="card" onclick="router.navigate('/article/${art.id}')" role="link">
+                    <div class="mood-tracker">${art.mood}</div>
+                    <div class="card-meta"><span>${art.date}</span></div>
+                    <h3>${art.title}</h3>
+                    <div class="card-preview">${art.content.replace(/[#*]/g, '')}</div>
+                    <div class="tags">${art.tags.map(t => `<span class="tag">#${t}</span>`).join('')}</div>
+                </div>`;
+        }
+
+        renderNews() {
+            const container = document.getElementById('news-container');
+            const items = this.state.news.map(n => `
+                <li class="news-item">
+                    <span class="news-date">${n.date}</span>
+                    <span class="news-badge badge-${n.type}">${n.type.toUpperCase()}</span>
+                    <span class="news-content">${n.content}</span>
+                </li>`).join('');
+            container.innerHTML = `<div class="news-panel"><div class="news-header">運営からの通達</div><ul class="news-list">${items}</ul></div>`;
+        }
+
+        renderArticle(id) {
+            const art = this.state.articles.find(a => a.id == id);
+            if (!art) return;
+            document.getElementById('article-render-target').innerHTML = `
+                <header class="article-header">
+                    <div class="article-date">${art.date} | ${art.mood}</div>
+                    <h1 class="article-title">${art.title}</h1>
+                    <div class="tags">${art.tags.map(t => `<span class="tag">#${t}</span>`).join('')}</div>
+                </header>
+                <div class="md-content">${this.parseMD(art.content)}</div>`;
+        }
+
+        parseMD(text) {
+            return text
+                .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
+                .replace(/!\[(.*?)\]\((.*?)\)/g, '<img src="$2" alt="$1" loading="lazy" width="600" height="400">')
+                .replace(/\n/g, '<br>');
+        }
+
+        search(q) {
+            const query = q.toLowerCase();
+            document.querySelectorAll('.card').forEach(card => {
+                card.style.display = card.innerText.toLowerCase().includes(query) ? 'flex' : 'none';
+            });
+        }
+
+        transition(callback) {
+            const overlay = document.getElementById('liquid-overlay');
+            const layers = overlay.querySelectorAll('.liquid-layer');
+            layers.forEach(l => { l.classList.remove('no-transition'); l.style.height = '100%'; });
+            setTimeout(() => {
+                callback();
+                layers.forEach(l => { l.classList.add('no-transition'); l.style.top = 'auto'; l.style.bottom = '0'; });
+                requestAnimationFrame(() => {
+                    layers.forEach(l => { l.classList.remove('no-transition'); l.style.height = '0%'; });
+                    setTimeout(() => { layers.forEach(l => { l.style.top = '0'; l.style.bottom = 'auto'; }); }, 600);
+                });
+            }, 700);
+        }
+
+        hideOverlay() {
+            const layers = document.querySelectorAll('.liquid-layer');
+            layers.forEach(l => l.style.height = '0%');
+        }
+        
+        tryAdmin() { this.transition(() => router.show('view-admin')); }
+    }
+
+    const router = {
+        navigate: (path) => {
+            app.transition(() => {
+                if (path === '/') router.show('view-home');
+                else if (path === '/about') router.show('view-about');
+                else if (path.startsWith('/article/')) {
+                    app.renderArticle(path.split('/')[2]);
+                    router.show('view-article');
+                }
+            });
+        },
+        back: () => router.navigate('/'),
+        show: (id) => {
+            document.querySelectorAll('.view-section').forEach(v => v.classList.add('hidden'));
+            document.getElementById(id).classList.remove('hidden');
+            app.state.currentView = id.replace('view-', '');
+            window.scrollTo(0, 0);
+        }
+    };
+
+    const app = new App();
+</script>
+
+<!-- SEO用構造化データ -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Blog",
+  "name": "佐々木日記",
+  "description": "佐々木動態観測事務所による公式記録",
+  "publisher": {
+    "@type": "Organization",
+    "name": "佐々木動態観測事務所"
+  }
+}
+</script>
+
+</body>
+</html>
